@@ -1,0 +1,12 @@
+# Build and simulation artifacts
+obj_dir/
+*.vcd
+*.log
+*.d
+*.o
+*.a
+
+# Editor and OS
+.DS_Store
+*.swp
+*~

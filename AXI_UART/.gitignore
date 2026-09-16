@@ -1,0 +1,4 @@
+obj_dir/
+*.vcd
+*.log
+.DS_Store

@@ -1,0 +1,41 @@
+stateDiagram-v2
+    [*] --> ST_IDLE
+    
+    ST_IDLE --> ST_RECOVERY : manual_recover 觸發
+    ST_IDLE --> ST_START_1 : TX FIFO 指令 (CMD_START=1)
+    ST_IDLE --> ST_TX_BYTE : TX FIFO 指令 (Write, 無 START)
+    ST_IDLE --> ST_RX_BYTE : TX FIFO 指令 (Read, 無 START)
+    
+    ST_START_1 --> ST_START_2 : phase_end_pulse (SCL High, SDA Low)
+    ST_START_2 --> ST_TX_BYTE : phase_end_pulse (Write)
+    ST_START_2 --> ST_RX_BYTE : phase_end_pulse (Read)
+    
+    ST_TX_BYTE --> ST_TX_BYTE : bit_end_pulse (bit_cnt > 0)
+    ST_TX_BYTE --> ST_RX_ACK : bit_end_pulse (bit_cnt == 0)
+    
+    ST_RX_ACK --> ST_STOP_1 : NACK / 具 STOP 旗標
+    ST_RX_ACK --> ST_RESTART_1 : 連續傳輸 (CMD_START=1)
+    ST_RX_ACK --> ST_TX_BYTE : 連續寫入 (CMD_READ=0)
+    ST_RX_ACK --> ST_RX_BYTE : 連續讀取 (CMD_READ=1)
+    ST_RX_ACK --> ST_IDLE : 傳輸結束 (無 STOP 且 FIFO Empty)
+    
+    ST_RX_BYTE --> ST_RX_BYTE : bit_end_pulse (bit_cnt > 0)
+    ST_RX_BYTE --> ST_TX_ACK : bit_end_pulse (bit_cnt == 0, 寫入 RX FIFO)
+    
+    ST_TX_ACK --> ST_STOP_1 : 具 STOP 旗標
+    ST_TX_ACK --> ST_RESTART_1 : 連續傳輸 (CMD_START=1)
+    ST_TX_ACK --> ST_RX_BYTE : 連續讀取 (CMD_READ=1)
+    ST_TX_ACK --> ST_TX_BYTE : 連續寫入 (CMD_READ=0)
+    ST_TX_ACK --> ST_IDLE : 傳輸結束 (無 STOP 且 FIFO Empty)
+    
+    ST_RESTART_1 --> ST_RESTART_2 : phase_end_pulse (SCL Low, SDA High)
+    ST_RESTART_2 --> ST_START_1 : phase_end_pulse (SCL High, SDA High)
+    
+    ST_STOP_1 --> ST_STOP_2 : phase_end_pulse (SCL Low, SDA Low)
+    ST_STOP_2 --> ST_IDLE : bit_end_pulse (SCL High, SDA Low -> High)
+    
+    ST_RECOVERY --> ST_RECOVERY : 產生 SCL 脈衝 (< 9 次)
+    ST_RECOVERY --> ST_STOP_1 : 脈衝計數達 9 次
+    
+    ST_TX_BYTE --> ST_ARB_LOST : arb_lost_pulse (仲裁失敗)
+    ST_ARB_LOST --> ST_IDLE : 釋放匯流排
