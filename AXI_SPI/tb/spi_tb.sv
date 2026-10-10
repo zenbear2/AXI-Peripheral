@@ -54,8 +54,8 @@ module spi_tb import spi_pkg::*; (
   axi_spi_top #(
     .FIFO_DEPTH (16)
   ) dut (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (clk),
+    .s_axi_aresetn (rst_n),
     .s_axi_awaddr  (s_axi_awaddr),
     .s_axi_awprot  (s_axi_awprot),
     .s_axi_awvalid (s_axi_awvalid),

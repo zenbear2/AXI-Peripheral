@@ -97,8 +97,8 @@ module i2c_tb (
   axi_i2c_top #(
     .FIFO_DEPTH (16)
   ) u_dut (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (clk),
+    .s_axi_aresetn (rst_n),
     .scl_i         (scl_line),
     .scl_o         (dut_scl_o),
     .scl_oe        (dut_scl_oe),

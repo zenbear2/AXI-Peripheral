@@ -6,7 +6,7 @@
 
 SUBDIRS = AXI_I2C AXI_SPI AXI_TIMER_PWM_WDT AXI_UART
 
-.PHONY: all test-all lint-all clean help \
+.PHONY: all test-all lint-all clean help package-all \
         test-i2c test-spi test-timer test-uart \
         lint-i2c lint-spi lint-timer lint-uart
 
@@ -17,6 +17,7 @@ help:
 	@echo "                     AXI-Peripheral Build System                      "
 	@echo "======================================================================"
 	@echo "Targets:"
+	@echo "  make package-all - Run Vivado IP Packager for all 4 peripheral IPs"
 	@echo "  make test-all    - Run test suites for all 4 peripheral IPs"
 	@echo "  make lint-all    - Run Verilator lint checks for all peripheral IPs"
 	@echo "  make clean       - Remove all simulation and build artifacts"
@@ -77,6 +78,12 @@ lint-timer:
 
 lint-uart:
 	@$(MAKE) -C AXI_UART lint
+
+package-all:
+	@echo "======================================================================"
+	@echo ">>> Packaging All AXI Peripheral IPs with Vivado IP Packager          "
+	@echo "======================================================================"
+	vivado -mode batch -source package_all_ips.tcl -nolog -nojournal
 
 clean:
 	@for dir in $(SUBDIRS); do \

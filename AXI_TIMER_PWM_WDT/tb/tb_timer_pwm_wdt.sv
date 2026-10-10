@@ -52,8 +52,8 @@ module tb_timer_pwm_wdt (
 
   // Instantiate DUT
   axi_timer_pwm_wdt_top u_dut (
-    .clk            (clk),
-    .rst_n          (rst_n),
+    .s_axi_aclk     (clk),
+    .s_axi_aresetn  (rst_n),
 
     .s_axi_awaddr   (s_axi_awaddr),
     .s_axi_awprot   (s_axi_awprot),

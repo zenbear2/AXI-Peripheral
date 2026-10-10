@@ -5,8 +5,8 @@
 // ============================================================================
 
 module axi_lite_slave (
-  input  logic        clk,
-  input  logic        rst_n,
+  input  logic        s_axi_aclk,
+  input  logic        s_axi_aresetn,
 
   /* verilator lint_off UNUSED */
   // AXI4-Lite Write Address Channel
@@ -49,6 +49,9 @@ module axi_lite_slave (
   output logic [5:0]  reg_rd_addr,
   input  logic [31:0] reg_rdata
 );
+
+  wire clk   = s_axi_aclk;
+  wire rst_n = s_axi_aresetn;
 
   // --------------------------------------------------------------------------
   // Write Channel State Machine & Handshake

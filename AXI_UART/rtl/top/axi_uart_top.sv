@@ -8,8 +8,8 @@ module axi_uart_top #(
   parameter int FIFO_DEPTH       = 16,
   parameter int DEFAULT_BAUD_DIV = 27   // 50MHz / (16 * 115200) ~= 27
 )(
-  input  logic        clk,
-  input  logic        rst_n,
+  input  logic        s_axi_aclk,
+  input  logic        s_axi_aresetn,
 
   // UART External Pins
   input  logic        uart_rx_pin,
@@ -44,6 +44,9 @@ module axi_uart_top #(
 );
 
   import uart_pkg::*;
+
+  wire clk   = s_axi_aclk;
+  wire rst_n = s_axi_aresetn;
 
   // --------------------------------------------------------------------------
   // Internal Registers & Signals
@@ -110,8 +113,8 @@ module axi_uart_top #(
 
   // 1. AXI4-Lite Slave Adapter
   axi_lite_slave u_axi_slave (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (s_axi_aclk),
+    .s_axi_aresetn (s_axi_aresetn),
     .s_axi_awaddr  (s_axi_awaddr),
     .s_axi_awprot  (s_axi_awprot),
     .s_axi_awvalid (s_axi_awvalid),

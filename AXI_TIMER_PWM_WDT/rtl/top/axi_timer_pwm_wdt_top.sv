@@ -2,8 +2,8 @@
 // File: axi_timer_pwm_wdt_top.sv
 // Description: Top-Level Integration of AXI4-Lite 1 Timer + 4 PWM + WDT IP Core
 module axi_timer_pwm_wdt_top import timer_pwm_wdt_pkg::*; (
-  input  logic        clk,
-  input  logic        rst_n,
+  input  logic        s_axi_aclk,
+  input  logic        s_axi_aresetn,
 
   // AXI4-Lite Slave Interface
   input  logic [31:0] s_axi_awaddr,
@@ -32,11 +32,11 @@ module axi_timer_pwm_wdt_top import timer_pwm_wdt_pkg::*; (
 
   // External Peripheral IOs
   // 1. Timer IOs
-  input  logic        tim_capture_in,
+  input  logic        tim_capture_in = 1'b0,
   output logic        tim_match_out,
 
   // 2. PWM IOs
-  input  logic        pwm_fault_in,
+  input  logic        pwm_fault_in = 1'b0,
   output logic [3:0]  pwm_out,
   output logic [3:0]  pwm_out_n,
 
@@ -50,6 +50,9 @@ module axi_timer_pwm_wdt_top import timer_pwm_wdt_pkg::*; (
   output logic        irq_wdt,
   output logic        irq_combined
 );
+
+  wire clk   = s_axi_aclk;
+  wire rst_n = s_axi_aresetn;
 
   // --------------------------------------------------------------------------
   // Internal Interconnect Wires
@@ -131,8 +134,8 @@ module axi_timer_pwm_wdt_top import timer_pwm_wdt_pkg::*; (
   // Submodule 1: AXI4-Lite Slave Bridge
   // --------------------------------------------------------------------------
   axi_lite_slave u_axi_slave (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (s_axi_aclk),
+    .s_axi_aresetn (s_axi_aresetn),
 
     .s_axi_awaddr  (s_axi_awaddr),
     .s_axi_awprot  (s_axi_awprot),

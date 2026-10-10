@@ -7,8 +7,8 @@
 module axi_i2c_top #(
   parameter int FIFO_DEPTH = 16
 )(
-  input  logic        clk,
-  input  logic        rst_n,
+  input  logic        s_axi_aclk,
+  input  logic        s_axi_aresetn,
 
   // External I2C Open-Drain Pin Interface
   input  logic        scl_i,
@@ -50,6 +50,9 @@ module axi_i2c_top #(
 );
 
   import i2c_pkg::*;
+
+  wire clk   = s_axi_aclk;
+  wire rst_n = s_axi_aresetn;
 
   // --------------------------------------------------------------------------
   // Internal Wires & Busses
@@ -145,8 +148,8 @@ module axi_i2c_top #(
   // 1. AXI4-Lite Slave Interface
   // --------------------------------------------------------------------------
   axi_lite_slave u_axi_slave (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (s_axi_aclk),
+    .s_axi_aresetn (s_axi_aresetn),
     .s_axi_awaddr  (s_axi_awaddr),
     .s_axi_awprot  (s_axi_awprot),
     .s_axi_awvalid (s_axi_awvalid),

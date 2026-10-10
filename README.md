@@ -150,6 +150,17 @@ make test-spi     # Test AXI_SPI
 make test-timer   # Test AXI_TIMER_PWM_WDT
 ```
 
+### Package for AMD / Xilinx Vivado IP Catalog / Block Design
+Package all 4 peripheral cores (`AXI_UART`, `AXI_I2C`, `AXI_SPI`, `AXI_TIMER_PWM_WDT`) with automatic AXI4-Lite bus interface inference:
+```bash
+# Using Makefile
+make package-all
+
+# Or directly with Vivado
+vivado -mode batch -source package_all_ips.tcl -nolog -nojournal
+```
+Once packaged, add the `AXI-Peripheral` folder to Vivado's **IP Repository** (`Settings -> IP -> Repository`), and all cores will appear in Vivado's IP Catalog ready for drag-and-drop into Block Designs.
+
 ### Clean Artifacts
 ```bash
 make clean

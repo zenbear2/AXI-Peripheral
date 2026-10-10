@@ -1,0 +1,20 @@
+COMPILER=
+ARCHIVER=
+CP=cp
+COMPILER_FLAGS=
+EXTRA_COMPILER_FLAGS=
+LIB=libxil.a
+
+CC_SOURCES = $(wildcard *.c)
+OUTS = $(CC_SOURCES:.c=.o)
+
+INCLUDEFILES=$(wildcard *.h)
+
+libs:
+	echo "Compiling axi_uart"
+	$(COMPILER) $(COMPILER_FLAGS) $(EXTRA_COMPILER_FLAGS) $(INCLUDES) $(CC_SOURCES)
+	$(ARCHIVER) -r ${LIB} ${OUTS}
+	$(CP) $(INCLUDEFILES) $(INCLUDEDIR)
+
+clean:
+	rm -rf ${OUTS}

@@ -5,10 +5,11 @@
 // ============================================================================
 
 module axi_spi_top import spi_pkg::*; #(
-  parameter int FIFO_DEPTH = 16
+  parameter int FIFO_DEPTH = 16,
+  parameter int NUM_SLAVES = 4
 )(
-  input  logic                  clk,
-  input  logic                  rst_n,
+  input  logic                  s_axi_aclk,
+  input  logic                  s_axi_aresetn,
 
   // AXI4-Lite Write Address Channel
   input  logic [31:0]           s_axi_awaddr,
@@ -48,6 +49,9 @@ module axi_spi_top import spi_pkg::*; #(
   // Hardware Interrupt Output
   output logic                  irq
 );
+
+  wire clk   = s_axi_aclk;
+  wire rst_n = s_axi_aresetn;
 
   // --------------------------------------------------------------------------
   // Local Register Access Bus
@@ -144,8 +148,8 @@ module axi_spi_top import spi_pkg::*; #(
   // AXI4-Lite Slave Interface Instance
   // --------------------------------------------------------------------------
   axi_lite_slave u_axi_slave (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (s_axi_aclk),
+    .s_axi_aresetn (s_axi_aresetn),
     .s_axi_awaddr  (s_axi_awaddr),
     .s_axi_awprot  (s_axi_awprot),
     .s_axi_awvalid (s_axi_awvalid),

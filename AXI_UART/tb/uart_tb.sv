@@ -44,8 +44,8 @@ module uart_tb (
   axi_uart_top #(
     .FIFO_DEPTH(16)
   ) u_dut (
-    .clk           (clk),
-    .rst_n         (rst_n),
+    .s_axi_aclk    (clk),
+    .s_axi_aresetn (rst_n),
     .uart_rx_pin   (uart_rx_pin),
     .uart_tx_pin   (uart_tx_pin),
     .irq           (irq),
