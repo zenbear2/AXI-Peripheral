@@ -1,14 +1,16 @@
 # AXI-Peripheral
 
 [![Bus Interface](https://img.shields.io/badge/Bus-AXI4--Lite%2032--bit-brightgreen.svg)](#)
-[![Language](https://img.shields.io/badge/Language-SystemVerilog%20%2F%20C%2B%2B-orange.svg)](#)
+[![Vivado IP](https://img.shields.io/badge/AMD%20Vivado-IP%20Packaged-red.svg)](#)
+[![Vitis Drivers](https://img.shields.io/badge/AMD%20Vitis-Baremetal%20Drivers-blueviolet.svg)](#)
+[![Language](https://img.shields.io/badge/Language-SystemVerilog%20%2F%20C-orange.svg)](#)
 [![Simulator](https://img.shields.io/badge/Simulator-Verilator-blue.svg)](#)
 [![Verification](https://img.shields.io/badge/Verification-100%25%20Passed-success.svg)](#)
 [![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg)](LICENSE)
 
-A high-performance, modular, and silicon-proven open-source **AXI4-Lite Peripheral IP Suite** designed for RISC-V SoC architectures (such as [AZ_V_SoC](https://github.com/zenbear2/AZ_V_SoC)), embedded microcontrollers, and FPGA/ASIC platforms.
+A high-performance, modular, and silicon-proven open-source **AXI4-Lite Peripheral IP Suite** designed for FPGA and ASIC SoC designs, including AMD / Xilinx MicroBlaze, RISC-V, and Arm processor architectures.
 
-All IP cores strictly adhere to the standard 32-bit AXI4-Lite bus interface, incorporate dedicated asynchronous interrupt signals, and come with comprehensive, self-checking Verilator C++ testbench suites.
+All IP cores strictly adhere to the standard 32-bit AXI4-Lite bus interface, incorporate dedicated asynchronous interrupt signals, and come with **pre-packaged AMD / Xilinx Vivado IP definitions (`component.xml` and GUI customization scripts)** for seamless drag-and-drop into Vivado IP Integrator (Block Design) and automated standalone driver integration in AMD Vitis.
 
 ---
 
@@ -18,7 +20,7 @@ All IP cores strictly adhere to the standard 32-bit AXI4-Lite bus interface, inc
 graph TD
     subgraph AXI_Interconnect ["AXI4-Lite Interconnect / Crossbar (32-bit)"]
         direction TB
-        M0["CPU Master (e.g. AZ_V / RISC-V Core)"]
+        M0["CPU Master (e.g. MicroBlaze / RISC-V / Arm Core)"]
     end
 
     M0 ==>|"AXI4-Lite"| IP_UART["AXI_UART<br/>• Full-duplex TX/RX<br/>• 16-entry FIFO<br/>• Baud Gen & Watermarks"]
@@ -94,30 +96,35 @@ graph TD
 ```text
 AXI-Peripheral/
 ├── Makefile                 # Top-level unified build & verification orchestrator
+├── package_all_ips.tcl      # One-click Vivado IP Packager automation script
 ├── README.md                # Top-level documentation
 ├── LICENSE                  # Apache 2.0 License
 ├── .gitignore               # Build artifact exclusion rules
-├── AXI_I2C/                 # I2C Master IP
+├── AXI_I2C/                 # I2C Master IP (Vivado Packaged)
+│   ├── component.xml        # Vivado IP metadata & bus interface definition
+│   ├── xgui/                # Vivado IP parameter GUI customization script
 │   ├── rtl/                 # SystemVerilog RTL (AXI slave, FSM, filter, FIFO)
 │   ├── tb/                  # Verilator C++ testbench & slave model
-│   ├── Makefile             # Standalone test runner
 │   └── README.md            # Detailed register specification
-├── AXI_SPI/                 # SPI Master IP
+├── AXI_SPI/                 # SPI Master IP (Vivado Packaged)
+│   ├── component.xml        # Vivado IP metadata & bus interface definition
+│   ├── xgui/                # Vivado IP parameter GUI customization script
 │   ├── rtl/                 # SystemVerilog RTL (AXI slave, SPI core, timing)
 │   ├── tb/                  # Verilator C++ testbench & Flash slave model
-│   ├── Makefile             # Standalone test runner
 │   └── README.md            # Detailed register specification
-├── AXI_TIMER_PWM_WDT/       # Timer, PWM & Watchdog Subsystem
+├── AXI_TIMER_PWM_WDT/       # Timer, PWM & Watchdog Subsystem (Vivado Packaged)
+│   ├── component.xml        # Vivado IP metadata & bus interface definition
+│   ├── xgui/                # Vivado IP parameter GUI customization script
 │   ├── rtl/                 # SystemVerilog RTL (Timer, PWM, WDT, deadtime)
 │   ├── tb/                  # Verilator C++ testbench
 │   ├── sw/                  # C driver headers and example code
-│   ├── Makefile             # Standalone test runner
 │   └── README.md            # Detailed register specification
-├── AXI_TIMER -> AXI_TIMER_PWM_WDT  # Symlink alias for convenience
-└── AXI_UART/                # Full-Duplex UART IP
+└── AXI_UART/                # Full-Duplex UART IP (Vivado Packaged)
+    ├── component.xml        # Vivado IP metadata & bus interface definition
+    ├── xgui/                # Vivado IP parameter GUI customization script
+    ├── drivers/             # Standalone C/C++ drivers for AMD Vitis (MDD, TCL, src)
     ├── rtl/                 # SystemVerilog RTL (AXI slave, baud gen, FIFO)
     ├── tb/                  # Verilator C++ testbench and modular tests
-    ├── Makefile             # Standalone test runner
     └── README.md            # Detailed register specification
 ```
 
@@ -149,6 +156,17 @@ make test-i2c     # Test AXI_I2C
 make test-spi     # Test AXI_SPI
 make test-timer   # Test AXI_TIMER_PWM_WDT
 ```
+
+### Package for AMD / Xilinx Vivado IP Catalog / Block Design
+Package all 4 peripheral cores (`AXI_UART`, `AXI_I2C`, `AXI_SPI`, `AXI_TIMER_PWM_WDT`) with automatic AXI4-Lite bus interface inference:
+```bash
+# Using Makefile
+make package-all
+
+# Or directly with Vivado
+vivado -mode batch -source package_all_ips.tcl -nolog -nojournal
+```
+Once packaged, add the `AXI-Peripheral` folder to Vivado's **IP Repository** (`Settings -> IP -> Repository`), and all cores will appear in Vivado's IP Catalog ready for drag-and-drop into Block Designs.
 
 ### Clean Artifacts
 ```bash
