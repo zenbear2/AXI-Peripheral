@@ -1,84 +1,91 @@
-# AXI4-Lite UART IP Core (AXI_UART)
+# AXI4-Lite UART IP Core (`AXI_UART`)
 
-本專案提供一個專為 **RISC-V 32-bit CPU/SoC** 設計的高效能、可配置 **AXI4-Lite UART IP 核心 (`axi_uart_top`)**。該 IP 以原生 SystemVerilog 撰寫，具備完整的 AXI4-Lite Slave 介面、獨立 16-entry TX/RX FIFO 緩衝區、16x 過採樣多數決中點採樣、內部/外部 Loopback 測試與硬體中斷 (IRQ) 訊號。
+[![Bus Interface](https://img.shields.io/badge/Bus-AXI4--Lite%2032--bit-brightgreen)](#)
+[![Language](https://img.shields.io/badge/Language-SystemVerilog-orange)](#)
+[![Verification](https://img.shields.io/badge/Verification-100%25%20Passed-success)](#)
+[![Vivado](https://img.shields.io/badge/Vivado-IP%20Packaged-red)](#)
+[![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey)](LICENSE)
 
----
+A high-performance, modular, and configurable **32-bit AXI4-Lite UART IP Core (`axi_uart_top`)** designed for FPGA and ASIC SoC designs (such as AMD / Xilinx MicroBlaze, RISC-V, and Arm processors).
 
-## 1. 主要架構特點 (Features)
-
-- **AXI4-Lite Slave 介面**：相容標準 AXI4-Lite 32-bit 通訊協定 (獨立 Write/Read 通道與 Handshake 機制)。
-- **靈活控制 (Configurable Line Control)**：
-  - 資料位元：5, 6, 7, 8 bits
-  - 停止位元：1 或 2 stop bits
-  - 奇偶檢驗：奇檢驗 (Odd)、偶檢驗 (Even) 或無檢驗 (None)
-  - 波特率 (Baud Rate)：內建 16-bit Prescaler，支援任何標準波特率 (如 9600, 115200, 921600 bps)。
-- **FIFO 緩衝機制**：參數化同步 FIFO (預設 TX 16 bytes, RX 16 bytes)，支援可程式化 Watermark 臨界值。
-- **可靠性設計**：
-  - RX 端採用 16x 過採樣與 3-sample 多數決 (Majority Voting) 濾除雜訊。
-  - 自動偵測 Framing Error、Parity Error 與 Overrun Error。
-- **中斷控制器 (Interrupt Controller)**：支援 TX Empty、RX Data Ready/Watermark、Framing Error 及 Overrun Error 硬體 IRQ 斷言與 Write-1-to-Clear 清除機制。
-- **測試模式 (Loopback Mode)**：可透過暫存器設定啟用內部 Serial Loopback 測試模式。
+Written in standard SystemVerilog, this IP features a full AXI4-Lite slave interface, independent 16-entry TX/RX FIFOs, 16x oversampling with 3-sample majority voting center sampling, internal digital loopback self-test mode, hardware interrupt (IRQ) signaling, and pre-packaged AMD Vivado IP catalog support with baremetal Vitis drivers.
 
 ---
 
-## 2. 暫存器地圖 (Register Map)
+## 1. Key Architectural Features
 
-基址 (Base Address) 採 32-bit 對齊，所有 Offset 以 Byte 為單位：
-
-| Offset | 暫存器名稱 | 讀/寫 | 欄位說明 |
-| :--- | :--- | :---: | :--- |
-| `0x00` | `TX_RX_DATA` | R/W | **[W]** 寫入 8-bit 資料至 TX FIFO<br>**[R]** 從 RX FIFO 讀取 8-bit 資料 |
-| `0x04` | `STATUS` | R | **[0]**: TX FIFO Empty<br>**[1]**: TX FIFO Full<br>**[2]**: RX FIFO Valid (Not Empty)<br>**[3]**: RX FIFO Full<br>**[4]**: TX Engine Busy<br>**[5]**: RX Engine Busy<br>**[6]**: Framing Error<br>**[7]**: Parity Error<br>**[8]**: Overrun Error |
-| `0x08` | `CTRL` | R/W | **[0]**: TX Enable (`1` = Enable)<br>**[1]**: RX Enable (`1` = Enable)<br>**[2]**: Loopback Enable (`1` = Enable)<br>**[4:3]**: Data Bits (`00`=5b, `01`=6b, `10`=7b, `11`=8b)<br>**[5]**: Parity Enable (`1` = Enable)<br>**[6]**: Parity Select (`0`=Even, `1`=Odd)<br>**[7]**: Stop Bits (`0`=1 bit, `1`=2 bits) |
-| `0x0C` | `BAUD_DIV` | R/W | 16-bit 波特率 Prescaler 除頻數：<br>$$\text{BAUD\_DIV} = \frac{f_{\text{clk}}}{16 \times \text{Baud\_Rate}}$$ |
-| `0x10` | `FIFO_STAT` | R/W | **[7:0]**: TX FIFO Count<br>**[15:8]**: RX FIFO Count<br>**[23:16]**: TX Watermark Threshold<br>**[31:24]**: RX Watermark Threshold |
-| `0x14` | `INTR_EN` | R/W | 中斷致能遮罩：<br>**[0]**: TX Empty Interrupt Enable<br>**[1]**: RX Ready / Watermark Interrupt Enable<br>**[2]**: Framing Error Interrupt Enable<br>**[3]**: Overrun Error Interrupt Enable |
-| `0x18` | `INTR_STATUS` | R/W1C | **[R]** 中斷狀態標籤<br>**[W1C]** 寫入 `1` 清除 Framing Err [2] 及 Overrun Err [3] |
-
----
-
-## 3. 時脈除頻計算範例 (Baud Rate Calculation)
-
-當系統主時脈 $f_{\text{clk}} = 50\text{ MHz}$ 且目標波特率為 $115200\text{ bps}$ 時：
-
-$$\text{BAUD\_DIV} = \frac{50,000,000}{16 \times 115200} = 27.126 \approx 27 \quad (\text{0x001B})$$
-
-若系統主時脈 $f_{\text{clk}} = 100\text{ MHz}$：
-
-$$\text{BAUD\_DIV} = \frac{100,000,000}{16 \times 115200} = 54.253 \approx 54 \quad (\text{0x0036})$$
+- **Standard AXI4-Lite 32-bit Slave Interface**: Independent read/write address and data channels with standard `OKAY` handshake responses.
+- **Flexible Line Control**:
+  - **Data Bits**: 5, 6, 7, or 8 bits.
+  - **Stop Bits**: 1 or 2 stop bits.
+  - **Parity**: Odd, Even, or None (disabled).
+  - **Baud Rate Generator**: 16-bit programmable prescaler supporting any standard baud rate (e.g., 9600, 115200, 921600 bps).
+- **FIFO Buffering**: Dual parameterized synchronous FIFOs (default 16-byte TX, 16-byte RX) with programmable watermark threshold interrupts.
+- **Reliability & Noise Filtering**:
+  - RX engine utilizes 16x clock oversampling with 3-sample majority voting at midpoint to reject noise spikes.
+  - Automatic detection and reporting of Framing Errors, Parity Errors, and FIFO Overrun Errors.
+- **Interrupt Controller**:
+  - Supports TX Empty, RX Data Ready / Watermark, Framing Error, and Overrun Error hardware IRQ assertions.
+  - Write-1-to-Clear (W1C) interrupt status clearing mechanism.
+- **Diagnostic Loopback Mode**: Software-controlled internal serial loopback mode for runtime self-testing without external wiring.
+- **Toolchain Ready**: Pre-packaged with Vivado IP definition (`component.xml`, `xgui/`), and complete standalone drivers for AMD Vitis (`drivers/axi_uart_v1_0`).
 
 ---
 
-## 4. 自動化編譯與驗證指令 (Build & Run)
+## 2. Register Map
 
-在 `/home/user/workspace/AXI_UART` 目錄下執行：
+Base address is 32-bit word aligned. All offsets are in bytes:
 
-1. **語法與 Lint 檢測**：
-   ```bash
-   make lint
-   ```
-2. **編譯 Verilator 仿真模型**：
-   ```bash
-   make build
-   ```
-3. **執行全套自動化單元測試**：
-   ```bash
-   make test
-   ```
-4. **執行仿真並輸出 VCD 波形圖 (uart_sim.vcd)**：
-   ```bash
-   make wave
-   ```
-5. **清理編譯檔**：
-   ```bash
-   make clean
-   ```
+| Offset | Register Name | Access | Reset Value | Description |
+| :---: | :--- | :---: | :---: | :--- |
+| `0x00` | **`TX_RX_DATA`** | R/W | `0x0000_0000` | **[W]** Write 8-bit byte to TX FIFO<br>**[R]** Read 8-bit byte from RX FIFO |
+| `0x04` | **`STATUS`** | RO | `0x0000_0001` | **[0]**: TX FIFO Empty<br>**[1]**: TX FIFO Full<br>**[2]**: RX FIFO Valid (Not Empty)<br>**[3]**: RX FIFO Full<br>**[4]**: TX Engine Busy<br>**[5]**: RX Engine Busy<br>**[6]**: Framing Error<br>**[7]**: Parity Error<br>**[8]**: Overrun Error |
+| `0x08` | **`CTRL`** | R/W | `0x0000_001B` | **[0]**: TX Enable (`1` = Enable)<br>**[1]**: RX Enable (`1` = Enable)<br>**[2]**: Loopback Enable (`1` = Enable)<br>**[4:3]**: Data Bits (`00`=5b, `01`=6b, `10`=7b, `11`=8b)<br>**[5]**: Parity Enable (`1` = Enable)<br>**[6]**: Parity Select (`0`=Even, `1`=Odd)<br>**[7]**: Stop Bits (`0`=1 bit, `1`=2 bits) |
+| `0x0C` | **`BAUD_DIV`** | R/W | `0x0000_0036` | 16-bit Baud Rate Prescaler Divisor:<br>$$\text{BAUD\_DIV} = \frac{f_{\text{clk}}}{16 \times \text{Baud\_Rate}}$$ |
+| `0x10` | **`FIFO_STAT`** | R/W | `0x0101_0000` | **[7:0]**: Current TX FIFO Count<br>**[15:8]**: Current RX FIFO Count<br>**[23:16]**: TX Watermark Threshold<br>**[31:24]**: RX Watermark Threshold |
+| `0x14` | **`INTR_EN`** | R/W | `0x0000_0000` | Interrupt Enable Mask:<br>**[0]**: TX Empty Interrupt Enable<br>**[1]**: RX Ready / Watermark Interrupt Enable<br>**[2]**: Framing Error Interrupt Enable<br>**[3]**: Overrun Error Interrupt Enable |
+| `0x18` | **`INTR_STATUS`** | R/W1C | `0x0000_0000` | **[RO]** Active Interrupt Status Flags<br>**[W1C]** Write `1` to clear Framing Error [2] and Overrun Error [3] |
 
 ---
 
-## 5. SoC 整合範例
+## 3. Baud Rate Prescaler Calculation
 
-在 SoC 頂層架構中，將 `axi_uart_top` 實例化並介接至 AXI Interconnect 或 CPU Memory Bus：
+For a given system clock frequency $f_{\text{clk}}$ and target baud rate $\text{Baud\_Rate}$:
+
+$$\text{BAUD\_DIV} = \text{round}\left(\frac{f_{\text{clk}}}{16 \times \text{Baud\_Rate}}\right)$$
+
+### Examples:
+- **At $f_{\text{clk}} = 50\text{ MHz}$ and $115200\text{ bps}$**:
+  $$\text{BAUD\_DIV} = \frac{50,000,000}{16 \times 115200} \approx 27 \quad (\text{0x001B})$$
+- **At $f_{\text{clk}} = 100\text{ MHz}$ and $115200\text{ bps}$**:
+  $$\text{BAUD\_DIV} = \frac{100,000,000}{16 \times 115200} \approx 54 \quad (\text{0x0036})$$
+
+---
+
+## 4. Verification & Build Commands
+
+Run the following commands within the `AXI_UART/` directory:
+
+```bash
+# 1. Run Verilator syntax and static lint analysis
+make lint
+
+# 2. Compile simulation model
+make build
+
+# 3. Execute the full automated test suite
+make test
+
+# 4. Run testbench and generate VCD waveform file (uart_sim.vcd)
+make wave
+
+# 5. Clean temporary build and simulation artifacts
+make clean
+```
+
+---
+
+## 5. SystemVerilog Instantiation Example
 
 ```systemverilog
 axi_uart_top #(
