@@ -121,17 +121,16 @@ module axi_lite_slave (
   assign reg_rd_addr = s_axi_araddr[5:0];
   assign reg_rd_en   = s_axi_arvalid && !s_axi_rvalid;
   assign s_axi_rresp = 2'b00;
+  assign s_axi_rdata = reg_rdata;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       s_axi_arready <= 1'b0;
       s_axi_rvalid  <= 1'b0;
-      s_axi_rdata   <= 32'd0;
     end else begin
       if (!s_axi_arready && s_axi_arvalid && !s_axi_rvalid) begin
         s_axi_arready <= 1'b1;
         s_axi_rvalid  <= 1'b1;
-        s_axi_rdata   <= reg_rdata;
       end else begin
         s_axi_arready <= 1'b0;
         if (s_axi_rready) begin
